@@ -1,13 +1,12 @@
 <script lang="ts" context="module">
 	import { currentStateStore } from "$lib/stores/currentState";
 	import { powerStore } from "$lib/stores/power";
-	import { javascript } from "@codemirror/lang-javascript";
-	import { basicSetup, EditorView } from "codemirror";
+	import * as monaco from "monaco-editor";
 	import { onMount } from "svelte";
 	import * as ts from "typescript";
 	import { z, ZodError } from "zod";
 
-	let el: Element;
+	let el: HTMLElement;
 	export let source: string = `// All values will be cropped to be within 0 and 1.0
 export default (seconds: number): number => {
 	return Math.abs(Math.sin(Math.PI * seconds));
@@ -86,20 +85,18 @@ export default (seconds: number): number => {
 	onMount(() => {
 		startTime = new Date();
 
-		let editor = new EditorView({
-			extensions: [
-				basicSetup,
-				javascript({
-					jsx: false,
-					typescript: true,
-				}),
-			],
-			parent: el,
-			doc: source,
+		let editor = monaco.editor.create(el, {
+			value: source,
+			language: "typescript",
+			theme: "vs-dark",
+		});
+
+		editor.onDidChangeModelContent((e) => {
+			source = editor.getValue();
 		});
 	});
 </script>
 
 <div class="bg-stone-900 w-full">
-	<div class="" bind:this={el} />
+	<div style="width: 600px; height: 300px" bind:this={el} />
 </div>

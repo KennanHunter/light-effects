@@ -49,13 +49,13 @@
 	/>
 </svelte:head>
 
-<main class="grid grid-cols-2 gap-4 p-4">
+<main class="flex flex-col sm:flex-row gap-4 p-4">
 	<section
-		class="grid place-content-center bg-stone-800 text-white rounded-lg p-4"
+		class=" flex flex-col justify-center flex-shrink flex-grow items-center p-6 px-40 bg-stone-800 text-white rounded-lg "
 	>
-		<div class="w-m-1/2">
-			<h1>Light Preview</h1>
+		<h1>Light Preview</h1>
 
+		<div style="width: 150px;">
 			<svg>
 				<rect
 					width="150"
@@ -73,13 +73,15 @@
 				)}</pre>
 		{/if}
 
-		<button on:click={$currentStateStore === "IDLE" ? runLight : stopLight}
+		<button
+			class="p-3 bg-stone-600 rounded-sm"
+			on:click={$currentStateStore === "IDLE" ? runLight : stopLight}
 			>{$currentStateStore === "IDLE" ? "run" : "stop"}</button
 		>
 	</section>
 
 	<section
-		class="grid place-content-center bg-stone-800 text-white rounded-lg p-4"
+		class="grid place-content-center flex-shrink-0 bg-stone-800 text-white rounded-lg p-4"
 	>
 		<Repl />
 	</section>
