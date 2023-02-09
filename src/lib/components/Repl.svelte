@@ -1,7 +1,6 @@
 <script lang="ts" context="module">
 	import { currentStateStore } from "$lib/stores/currentState";
 	import { powerStore } from "$lib/stores/power";
-	import * as monaco from "monaco-editor";
 	import { onMount } from "svelte";
 	import * as ts from "typescript";
 	import { z, ZodError } from "zod";
@@ -82,8 +81,10 @@ export default (seconds: number): number => {
 </script>
 
 <script lang="ts">
-	onMount(() => {
+	onMount(async () => {
 		startTime = new Date();
+
+		const monaco = await import("monaco-editor");
 
 		let editor = monaco.editor.create(el, {
 			value: source,
