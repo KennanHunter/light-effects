@@ -46,11 +46,7 @@ export default (seconds: number): number => {
 			.function()
 			.args(z.number())
 			.returns(z.number())
-			.parseAsync(module.default)
-			.catch((err) => err.message ?? "Code did not return a number");
-
-		if (typeof importedDefault === "string")
-			return Promise.reject(importedDefault);
+			.parse(module.default);
 
 		getRawPower = importedDefault;
 
