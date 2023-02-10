@@ -87,13 +87,14 @@ export default (seconds: number): number => {
 		const monaco = await import("monaco-editor");
 
 		if (location.hash) {
-			source = location.hash;
+			source = location.hash.slice(1);
 		}
 
 		let editor = monaco.editor.create(el, {
 			value: source,
 			language: "typescript",
 			theme: "vs-dark",
+			automaticLayout: true
 		});
 
 		editor.onDidChangeModelContent(async (e) => {
@@ -101,8 +102,10 @@ export default (seconds: number): number => {
 			location.hash = source;
 		});
 	});
+	
 </script>
 
-<div class="bg-stone-900 w-full">
-	<div style="width: 600px; height: 300px" bind:this={el} />
+<div class="bg-stone-900" style="width: 100vw; height: 100vh; display: flex; flex-flow: column;">
+	<slot />
+	<div style="width: 100%; height: 100%;" bind:this={el} />
 </div>
