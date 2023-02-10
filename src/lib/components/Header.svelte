@@ -1,51 +1,87 @@
 <script lang="ts">
 	import GitHub from "../images/github.svg";
-	import Repl, {
-		getPower,
-		runLight,
-		stopLight,
-	} from "$lib/components/Repl.svelte";
 	import { currentStateStore } from "$lib/stores/currentState";
 	import { powerStore } from "$lib/stores/power";
 	import { onMount } from "svelte";
-	
-	import Header from "../../lib/components/Header.svelte";
+	import { powerFunctionStore } from "$lib/stores/powerFunction";
 
-	onMount(() => {
-		const interval = setInterval(async () => {
-			if ($currentStateStore === "IDLE") return;
+	let startTime: Date;
 
-			if (!getPower) return;
+	const elapsedTime = (): number =>
+		(new Date().getTime() - startTime.getTime()) / 1000;
 
-			if ($currentStateStore === "RUNNING") {
-				powerStore.set({
-					status: "successful",
-					power:
-						(await getPower()) ??
-						($powerStore.status === "successful" ? $powerStore.power : -1),
-				});
-			}
-		}, 10);
+	const updatePower = async () => {
+		if ($currentStateStore === "IDLE" ||
+			$powerFunctionStore.status === "error") {
+				startTime = new Date();
 
-		return () => clearInterval(interval);
-	});
+				if ($powerFunctionStore.status === "successful") {
+					powerStore.set({
+						status: "successful",
+						power: 0
+					});
+				} else {
+					powerStore.set({
+						status: "error",
+						reason: $powerFunctionStore.reason
+					});
+				}
 
-	const toHSLLightness = () => {
-		if ($powerStore.status === "error") return 20;
+				return;
+		}
 
-		return $powerStore.power * 50 + 20;
-	};
+		let computedPower = await $powerFunctionStore.power(elapsedTime()).catch((err) => {
 
-	let hslLightness: number;
+		});
+
+		if (!computedPower) {
+			powerStore.set({
+				status: "error",
+				reason: "Code returned a malformed value",
+			});
+
+			return;
+		}
+
+		powerStore.set({
+			status: "successful",
+			power: computedPower,
+		});
+	}
+
+	const runFrame = async () => {
+		window.requestAnimationFrame(runFrame);
+
+		await updatePower();
+	}
+
+	let hsl: string;
+
+	const fillHSLValues = () => {
+		if ($powerStore.status === "error") {
+			hsl = 'hsl(0 100% 30%)';
+			return;
+		}
+
+		hsl = `hsl(204 100% ${($powerStore.power * 50 + 20).toFixed(0)}%)`;
+	}
 
 	powerStore.subscribe(() => {
-		hslLightness = toHSLLightness();
-		console.log(hslLightness);
+		fillHSLValues();
+	});
+
+	const runLight = async () => currentStateStore.set("RUNNING");
+	const stopLight = async () => currentStateStore.set("IDLE");
+
+	onMount(() => {
+		startTime = new Date();
+
+		window.requestAnimationFrame(runFrame);
 	});
 </script>
 
-<header class="pr-4 bg-stone-800 text-white flex justify-between" style={`align-items: center; background-color: hsl(204 100% ${hslLightness.toFixed(0)}%);`}>
-	<div class="bg-stone-800 px-4">
+<header class="pr-4 bg-stone-800 text-white flex justify-between items-center" style={`background-color: ${hsl};`}>
+	<div class="bg-stone-800 px-4 rounded-r">
 		<h1 class="inline">Kennan's Effect Playground</h1>
 
 		<button
@@ -54,13 +90,11 @@
 			>{$currentStateStore === "IDLE" ? "[run]" : "[stop]"}</button
 		>
 	
-		{#if $powerStore.status === "error"}
-			<pre class="border-black text-red">{$powerStore.reason}</pre>
-		{:else if $powerStore.status === "successful"}
-			<pre class="border-black text-red inline">Power: {$powerStore.power.toFixed(
-					3,
-				)}</pre>
-		{/if}
+		<pre class="border-black text-red inline"> {
+			($powerStore.status === "successful") ? 
+				`Power: ${$powerStore.power.toFixed(3)}` :
+				`Error: ${$powerStore.reason}`
+		} </pre>
 	</div>
 
 	<a href="https://github.com/kennanHunter/light-effects"
