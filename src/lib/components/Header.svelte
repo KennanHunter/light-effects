@@ -94,7 +94,7 @@
 	<div
 		class="flex items-center bg-stone-800 px-4 md:rounded-r mb-8 md:mb-0 w-full md:w-auto"
 	>
-		<h1 class="m-2">Kennan's Effect Playground</h1>
+		<h1 class="m-2">11329 Effect Playground</h1>
 
 		<button
 			class="p-2 bg-stone-800 rounded mx-4"
