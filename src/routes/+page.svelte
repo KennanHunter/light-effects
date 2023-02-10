@@ -1,7 +1,6 @@
 <script lang="ts">
+	import Header from "$lib/components/Header.svelte";
 	import Repl from "$lib/components/Repl.svelte";
-	
-	import Header from "../lib/components/Header.svelte";
 </script>
 
 <svelte:head>
