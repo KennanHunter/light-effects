@@ -80,24 +80,24 @@
 	});
 </script>
 
-<header class="pr-4 bg-stone-800 text-white flex justify-between items-center" style={`background-color: ${hsl};`}>
-	<div class="bg-stone-800 px-4 rounded-r">
-		<h1 class="inline">Kennan's Effect Playground</h1>
+<header class="bg-stone-800 text-white flex justify-between items-center" style={`background-color: ${hsl};`}>
+	<div class="flex items-center bg-stone-800 px-4 md:rounded-r mb-8 md:mb-0 w-full md:w-auto">
+		<h1 class="m-2">Kennan's Effect Playground</h1>
 
 		<button
-			class="p-2 bg-stone-800 rounded mx-4 "
+			class="p-2 bg-stone-800 rounded mx-4"
 			on:click={$currentStateStore === "IDLE" ? runLight : stopLight}
 			>{$currentStateStore === "IDLE" ? "[run]" : "[stop]"}</button
 		>
 	
-		<pre class="border-black text-red inline"> {
+		<pre class="border-black text-red"> {
 			($powerStore.status === "successful") ? 
 				`Power: ${$powerStore.power.toFixed(3)}` :
 				`Error: ${$powerStore.reason}`
 		} </pre>
-	</div>
 
-	<a href="https://github.com/kennanHunter/light-effects"
-		><img src={GitHub} width="32" alt="Github link" /></a
-	>
+		<a class="ml-4" href="https://github.com/kennanHunter/light-effects"
+			><img src={GitHub} width="32" alt="Github link" /></a
+		>
+	</div>
 </header>
