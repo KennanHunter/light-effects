@@ -12,8 +12,7 @@
 	/>
 </svelte:head>
 
-<main class="flex flex-col sm:flex-row gap-4">
-	<Repl>
-		<Header />
-	</Repl>
+<main class="bg-stone-900 w-full h-full flex flex-col">
+	<Header />
+	<Repl />
 </main>

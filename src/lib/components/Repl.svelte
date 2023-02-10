@@ -1,9 +1,10 @@
 <script lang="ts" context="module">
 	import { currentStateStore } from "$lib/stores/currentState";
 	import { powerStore } from "$lib/stores/power";
+	import { powerFunctionStore } from "$lib/stores/powerFunction";
 	import { onMount } from "svelte";
 	import * as ts from "typescript";
-	import { z, ZodError } from "zod";
+	import { number, string, z, ZodError } from "zod";
 
 	let el: HTMLElement;
 	export let source: string = `// All values will be cropped to be within 0 and 1.0
@@ -11,83 +12,91 @@ export default (seconds: number): number => {
 	return Math.abs(Math.sin(Math.PI * seconds));
 };
 `;
+	let getRawPower: ((seconds: number, ...rest: unknown[]) => number) = () => 0;
 
-	let startTime: Date;
-
-	const elapsedTime = (): number =>
-		(new Date().getTime() - startTime.getTime()) / 1000;
-
-	export type GetPower = () => Promise<number | undefined>;
-	export const getPower: GetPower = async () => {
-		const transpiledCode = ts.transpile(source, {
+	export const transpileCode = async () => {
+		let transpiledCode: string = ts.transpile(source, {
 			target: ts.ScriptTarget.ESNext,
 			module: ts.ModuleKind.ESNext,
+			checkJs: true,
+			alwaysStrict: true,
+			strict: true,
+        	strictFunctionTypes: true,
+        	strictBindCallApply: true,
+        	strictNullChecks: true,
+        	strictPropertyInitialization: true,
 		});
 
 		if (!transpiledCode) {
-			console.error("Fuck");
-			powerStore.set({
-				status: "error",
-				reason: "No code transpiled",
-			});
+			console.log(0)
+
+			return Promise.reject("No code transpiled");
 		}
 
-		const dataUri =
-			"data:text/javascript;charset=utf-8," +
-			encodeURIComponent(transpiledCode);
+		const dataUri = `data:text/javascript;charset=utf-8,"use strict";\n${encodeURIComponent(transpiledCode)}`;
 
-		const module = await import(/* @vite-ignore */ dataUri);
+		const module = await import(/* @vite-ignore */ dataUri).catch((err) => {
+			console.log(1)
+			return (err ?? "Code did not return a number");
+		});
 
-		const getRawPower = await z
+		console.log(typeof module);
+
+		if (typeof module === "string") 
+			return module;
+
+		let importedDefault = await z
 			.function()
 			.args(z.number())
 			.returns(z.number())
 			.parseAsync(module.default)
-			.catch(() => {
-				console.log("Code does not follow schema");
-
-				powerStore.set({
-					status: "error",
-					reason: "Code doe does not follow schema",
-				});
+			.catch((err) => {
+				console.log(2)
+				return ((err as ZodError).message ?? "Code did not return a number");
 			});
 
-		if (!getRawPower) return;
+console.log(typeof importedDefault);
 
+		if (typeof importedDefault === "string") 
+			return importedDefault;
+
+		getRawPower = importedDefault;
+		
+		powerFunctionStore.set({
+			status: "successful",
+			power: getPower
+		});
+	}
+
+	export const getPower = async (seconds: number): Promise<number | undefined> => {
 		const power = await z
 			.number()
 			.min(0, "Number cannot be less than 0")
 			.max(1, "Number cannot be more than 1")
-			.parseAsync(getRawPower(elapsedTime()))
+			.parseAsync(getRawPower(seconds))
 			.catch((err) => {
-				console.log(err ?? "Code did not return a number");
-
-				powerStore.set({
-					status: "error",
-					reason: (err as ZodError).message ?? "Code did not return a number",
-				});
+				Promise.reject((err as ZodError).message ?? "Code did not return a number");
 			});
 
 		return power ?? undefined;
-	};
-
-	export const runLight = async () => {
-		currentStateStore.set("RUNNING");
-	};
-
-	export const stopLight = async () => {
-		currentStateStore.set("IDLE");
 	};
 </script>
 
 <script lang="ts">
 	onMount(async () => {
-		startTime = new Date();
+		transpileCode().catch((err) => {
+			console.log(err);
 
+			powerFunctionStore.set({
+				status: "error",
+				reason: err,
+			});
+		});
+		
 		const monaco = await import("monaco-editor");
 
 		if (location.hash) {
-			source = location.hash.slice(1);
+			source = decodeURIComponent(location.hash.slice(1));
 		}
 
 		let editor = monaco.editor.create(el, {
@@ -97,15 +106,15 @@ export default (seconds: number): number => {
 			automaticLayout: true
 		});
 
-		editor.onDidChangeModelContent(async (e) => {
+		editor.getModel()?.onDidChangeContent(async (e) => {
 			source = editor.getValue();
-			location.hash = source;
+
+			transpileCode();
+
+			location.hash = encodeURIComponent(source);
 		});
 	});
 	
 </script>
 
-<div class="bg-stone-900" style="width: 100vw; height: 100vh; display: flex; flex-flow: column;">
-	<slot />
-	<div style="width: 100%; height: 100%;" bind:this={el} />
-</div>
+<div class="w-full h-full" bind:this={el} />
