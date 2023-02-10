@@ -86,14 +86,19 @@ export default (seconds: number): number => {
 
 		const monaco = await import("monaco-editor");
 
+		if (location.hash) {
+			source = location.hash;
+		}
+
 		let editor = monaco.editor.create(el, {
 			value: source,
 			language: "typescript",
 			theme: "vs-dark",
 		});
 
-		editor.onDidChangeModelContent((e) => {
+		editor.onDidChangeModelContent(async (e) => {
 			source = editor.getValue();
+			location.hash = source;
 		});
 	});
 </script>
